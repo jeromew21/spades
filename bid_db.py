@@ -1,5 +1,9 @@
 import sqlite3
 import json
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LinearRegression, Ridge, LogisticRegression
 from jeromeai import *
 
 DB = "bidding.sqlite3"
@@ -62,7 +66,33 @@ def best_hands():
     query = "SELECT hand from bids WHERE best_bid = '7'"
     c.execute(query)
     for t in c.fetchall():
-        hand = [Card.from_(i) for i, k in enumerate(t[0]) if k == '1']
-        print(hand)
+        hand = [Card.from_(i) for i, k in enumerate(json.loads(t[0])) if k == 1]
+        pretty_print_hand(hand)
+    conn.commit()
+    conn.close()
+
+if __name__ == "__main__":
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    query = "SELECT hand, best_bid from bids"
+    c.execute(query)
+    fetch = c.fetchall()
+    X = np.array([np.array(json.loads(t[0])) for t in fetch])
+    Y = np.array([int(t[1]) for t in fetch])
+
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25)
+
+    linear = Ridge()
+    linear.fit(X_train, y_train)
+
+    y_train_pred = linear.predict(X_train)
+    y_test_pred = linear.predict(X_test)
+
+    # print accuracies
+    print('train acc: ', accuracy_score(np.rint(y_train_pred), y_train))
+    print('test acc: ', accuracy_score(np.rint(y_test_pred), y_test))
+
+    print('test loss', np.mean(np.square(y_test_pred - y_test)))
+
     conn.commit()
     conn.close()

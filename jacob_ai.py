@@ -94,14 +94,15 @@ def play_turn(player, hand, table, bids, history, spades):
 	return card
 
 def test_ai():
-	bidding_vec = [random.randint(0,13) for i in range(4)]
-	start_state = GameState.from_(bidding_vec, Deck().deal_array(), [None, None, None, None], 0)
-	state = start_state.children()[0]
-	print(state.label())
-	while state.hands_played < 13:
-		print(play_turn)
-		state = hook(play_turn, state)
+	for _ in range(100):
+		bidding_vec = [random.randint(0,13) for i in range(4)]
+		start_state = GameState.from_(bidding_vec, Deck().deal_array(), [None, None, None, None], 0)
+		state = start_state.children()[0]
 		print(state.label())
+		while state.hands_played < 13:
+			print(play_turn)
+			state = hook(play_turn, state)
+			print(state.label())
 
 if __name__ == "__main__":
 	for i in range(1):

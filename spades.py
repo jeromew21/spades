@@ -1,68 +1,6 @@
 import numpy as np
 from deck import *
 
-TRUMP_SUIT = "spades"
-
-class OOPGame:
-    """An OOP Game"""
-
-    def __init__(self, deck, player_names=("Aaron", "Chris", "David", "Max"), verbose=True):
-        p1 = Player(player_names[0])
-        p2 = Player(player_names[1])
-        p3 = Player(player_names[2], p1)
-        p4 = Player(player_names[3], p2)
-        p2.partner = p4
-        p1.partner = p3
-        p1.next_player = p2
-        p2.next_player = p3
-        p3.next_player = p4
-        p4.next_player = p1
-        self.spades_broken = False
-        self.players = (p1, p2, p3, p4)
-        self.teams = ((p1, p3), (p2, p4))
-        self.past_tricks = []
-        self.verbose = verbose
-        deck.deal(self.players)
-    
-    def log(self, text):
-        if self.verbose:
-            print(text)
-       
-    def play(self):
-        if self.players[0].hand_size <= 0:
-            return
-        self.make_bids()
-        winner = self.players[0]
-        while self.players[0].hand_size > 0:
-            plays, winner, self.spades_broken = self.trick(winner, self.past_tricks, self.spades_broken)
-            self.past_tricks.append(plays)
-            winner.win_trick()
-            self.log("")
-
-    def make_bids(self):
-        self.bids = [player.bid for player in self.players]
-        for player in self.players:
-            player.make_bid(self.bids)
-            self.bids = [player.bid for player in self.players]
-
-    def trick(self, winner, past_tricks, spades_broken):
-        plays = []
-        plays.append((winner, winner.throw_card(past_tricks, plays, spades_broken, True)))
-        player = winner.next_player
-        while player is not winner:
-            card = player.throw_card(past_tricks, plays, spades_broken)
-            if card.value == TRUMP_SUIT:
-                spades_broken = True
-            plays.append((player, card))
-            player = player.next_player
-        current_suit = plays[0][1].suit
-        max_play = plays[0]
-        for player, card in plays:
-            if card.suit in (TRUMP_SUIT, current_suit):
-                if ((card.suit == max_play[1].suit != TRUMP_SUIT) and card.value > max_play[1].value) or (card.suit == TRUMP_SUIT and max_play[1].suit != TRUMP_SUIT):
-                    max_play = (player, card)
-        return plays, max_play[0], spades_broken
-
 NO_CARD = np.array(Card.null_card())
 PARTNERS = (2, 3, 0, 1)
 TWO_CLUBS = np.array([0, 0, 0, 1, 2])
@@ -168,7 +106,7 @@ class GameState:
                     return "Game has begun"
                 return "{0} bids {1}".format(pad_name(self.names[i-1]), self.bids[i-1])
         if len(self.history) == 0 and all(is_no_card(card) for card in self.table):
-            return "{0} bids {1}".format(pad_name(self.names[3]), self.bids[3])
+            return "{0} bids {1}\n".format(pad_name(self.names[3]), self.bids[3])
         is_empty = True
         for card_vec in self.table:
             if not is_no_card(card_vec):
@@ -177,7 +115,8 @@ class GameState:
         if is_empty:
             k = vec_to_player(self.history[-1][2])
             last_card = self.history[-1][0][k]
-            empty_message = "\n{0} wins\n".format(self.names[vec_to_player(self.history[-1][1])])
+            winner = vec_to_player(self.history[-1][1])
+            empty_message = "\n{0}/{1} win\n".format(self.names[winner], self.names[PARTNERS[winner]])
         else:
             k = self.active_player - 1
             if k < 0:
@@ -238,17 +177,28 @@ class GameState:
         target = p1 + 5*active_player
         table_count = sum(1 if is_no_card(card) else 0 for card in self.table)
         opener_index = 0
+        has_suit = False
         if table_count < 4: #ONE NULL CARD, THREE CARDS
             while not is_no_card(self.table[opener_index]):
                 opener_index = loop_add_one(opener_index)
             while is_no_card(self.table[opener_index]):
                 opener_index = loop_add_one(opener_index)
+            for card in self.hands[active_player]:
+                if not is_no_card(card) and card_suit(card) == card_suit(self.table[opener_index]):
+                    has_suit = True
+        else: #Four nulls mean we always have the suit
+            has_suit = True
         for k, card in enumerate(self.hands[active_player]):
             offset = active_player*13*5 + k*5 + 8
             cpy = np.copy(self.vec)
             cpy[4:8] = next_player
-            if not is_no_card(cpy[offset:offset+5]):
-                #if spade, update spades_broken
+            if not is_no_card(card):
+                if table_count < 4 and card_suit(card) != card_suit(self.table[opener_index]) and has_suit:
+                    continue
+                if is_trump(card):
+                    if table_count == 4 and self.vec[p2] == 0: #tried to open a spade
+                        continue
+                    cpy[p2] = 1
                 play_card(cpy, offset, target)
                 #Update history if last
                 history_i = self.hands_played
@@ -284,7 +234,7 @@ def test():
     start_state = GameState.from_([None, None, None, None], Deck().deal_array(), [None, None, None, None], 0, [])
     print(start_state.label())
     d1 = start_state
-    for i in range(14*4):
+    for _ in range(14*4):
         d1 = list(d1.children())
         random_child = random.choice(d1)
         print(random_child.label())

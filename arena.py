@@ -32,7 +32,11 @@ def match():
     record = [0, 0]
     errors = 0
     for i in range(100):
-        winner = fight(jerome_ai, play_turn)
+        try:
+            winner = fight(jerome_ai, play_turn)
+        except:
+            winner = None
+            errors += 1
         if winner == jerome_ai:
             record[0] += 1
         elif winner == play_turn:

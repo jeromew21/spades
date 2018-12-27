@@ -26,10 +26,13 @@ def play_turn(player, hand, table, bids, history, spades):
 
 	table_high = max(table[:,4])
 	table_high_player = np.argmax(table[:,4])
+
+	go_first = False
 	if winner != player:
 		suit = min(np.where(table[winner]==1)[0])
 	else:
 		suit = 0
+		go_first = True
 	# high_card = 
 
 	#if it is advantageous to win the trick
@@ -51,7 +54,7 @@ def play_turn(player, hand, table, bids, history, spades):
 				return card
 
 			#try to play a spade instead
-			if hand_high==0 and have_suit==False:
+			if hand_high==0 and have_suit==False and go_first==False:
 				spade_low = 100
 				for card in hand:
 					if len(np.where(card==1)[0])>0 and min(np.where(card==1)[0])==1 and card[4]<spade_low:
@@ -88,6 +91,7 @@ def play_turn(player, hand, table, bids, history, spades):
 	for card in hand:
 		if card[4]<hand_low and card[4]>0:
 			hand_low = card[4]
+	print(4)
 	card = copy(empty_card)
 	card[1] = 1
 	card[4] = hand_low

@@ -85,7 +85,7 @@ class GameState:
         vec = np.zeros((653,), dtype='int32')
         arr = np.array(arr)
         vec[:arr.shape[0]] = arr
-        return GameState(vec, len(history))
+        return GameState(vec, len(history), player_names=player_names)
 
     def __init__(self, state_vector, hands_played=0, player_names=("Aaron", "Chris", "David", "Max")):
         self.vec = state_vector
@@ -166,14 +166,14 @@ class GameState:
         for player, bid in bids:
             if bid == 0:
                 if player in trick_winners:
-                    score -= 100
+                    score -= 10
                 else:
-                    score += 100
+                    score += 10
         tricks_won = len([k for k in trick_winners if k in (player, PARTNERS[player])])
         if tricks_won < total_bid:
-            score -= 100 * total_bid
+            score -= 10 * total_bid
         else:
-            score += 100 * total_bid
+            score += 10 * total_bid
             if tricks_won > total_bid:
                 overbid = tricks_won - total_bid
                 score -= OVERBID_PENALTY * overbid
@@ -232,9 +232,12 @@ class GameState:
                 if not is_no_card(card) and card_suit(card) == card_suit(self.table[opener_index]):
                     has_suit = True
                 if not is_no_card(card) and not is_trump(card):
-                    has_non_spade = True
+                    has_non_spade = True            
         else: #Four nulls meanelse we always have the suit
             has_suit = True
+            for card in self.hands[active_player]:
+                if not is_no_card(card) and not is_trump(card):
+                    has_non_spade = True
         for k, card in enumerate(self.hands[active_player]):
             offset = active_player*13*5 + k*5 + 8
             cpy = np.copy(self.vec)

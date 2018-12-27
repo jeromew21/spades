@@ -28,6 +28,9 @@ def jerome_ai(player, hand, table, bids, history, spades_broken):
                 has_non_spade = True
     else: #Four nulls mean we always have the suit
         has_suit = True
+        for card in hand:
+            if not is_no_card(card) and not is_trump(card):
+                has_non_spade = True
     
     card_scores = ((i, rate_card(card), card) for i, card in enumerate(hand))
     card_scores = [
@@ -55,8 +58,9 @@ def jerome_ai(player, hand, table, bids, history, spades_broken):
     trick_winners = tuple(vec_to_player(winner) for cards, winner, _ in history)
     tricks_won = len([k for k in trick_winners if k in (player, PARTNERS[player])])
     total_bid = bids[player] + bids[PARTNERS[player]]
-    if tricks_won >= total_bid:
+    if tricks_won >= total_bid: #We have gone over
         return weakest_play[2]
+    #Take best play better than strongest play
     return strongest_play[2]
 
 def test_ai():

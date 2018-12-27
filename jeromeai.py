@@ -4,7 +4,7 @@ def rate_card(card, active_suit):
     score = 0
     if not is_no_card(card) and is_trump(card):
         score += 14
-    if not is_no_card(card) and card_suit(card) == active_suit:
+    if active_suit is None or (not is_no_card(card) and card_suit(card) == active_suit):
         score += card[4]
     return score
 

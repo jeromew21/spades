@@ -55,3 +55,12 @@ def generate_row():
     c.execute(query, (json.dumps(hand_serialized), str(result)))
     conn.commit()
     conn.close()
+
+def best_hands():
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    query = "SELECT hand from bids WHERE best_bid = '7'"
+    c.execute(query)
+    print(c.fetchall())
+    conn.commit()
+    conn.close()

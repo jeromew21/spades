@@ -3,6 +3,7 @@ import time
 from deck import *
 from spades import *
 from copy import copy
+import random
 
 empty_card = np.array([0,0,0,0,0])
 
@@ -93,7 +94,8 @@ def play_turn(player, hand, table, bids, history, spades):
 	return card
 
 def test_ai():
-	start_state = GameState.from_([3, 3, 3, 3], Deck().deal_array(), [None, None, None, None], 0)
+	bidding_vec = [random.randint(0,13) for i in range(4)]
+	start_state = GameState.from_(bidding_vec, Deck().deal_array(), [None, None, None, None], 0)
 	state = start_state.children()[0]
 	print(state.label())
 	while state.hands_played < 13:

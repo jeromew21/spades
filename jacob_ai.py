@@ -23,6 +23,7 @@ def play_turn(player, hand, table, bids, history, spades):
 	trick_winners = tuple(vec_to_player(winner) for cards, winner, _ in history)
 	tricks_won = len([k for k in trick_winners if k in (player,(player+2)%4)])
 	tricks_won_opp = len([k for k in trick_winners if not k in (player,(player+2)%4)])
+	tricks_played = len(history)
 
 	table_high = max(table[:,4])
 	table_high_player = np.argmax(table[:,4])
@@ -37,7 +38,9 @@ def play_turn(player, hand, table, bids, history, spades):
 
 	#if it is advantageous to win the trick
 	if table_high_player!=(player+2)%4:
-		if tricks_won<our_bid or opp_bid<tricks_won_opp:
+		to_win_opp = opp_bid-tricks_won_opp
+		remaining = 13-tricks_played
+		if tricks_won<our_bid or (to_win_opp<remaining and to_win_opp/remaining>0.5):
 			hand_high = 0
 			have_suit = False
 			for card in hand:
@@ -91,7 +94,6 @@ def play_turn(player, hand, table, bids, history, spades):
 	for card in hand:
 		if card[4]<hand_low and card[4]>0:
 			hand_low = card[4]
-	print(4)
 	card = copy(empty_card)
 	card[1] = 1
 	card[4] = hand_low

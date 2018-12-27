@@ -1,5 +1,8 @@
 import numpy as np
+import time
 from deck import *
+
+OVERBID_PENALTY = 10
 
 NO_CARD = np.array(Card.null_card())
 PARTNERS = (2, 3, 0, 1)
@@ -49,7 +52,7 @@ p2 = p1 + 5*4 #Table
 class GameState:
 
     @staticmethod
-    def from_(bids, hands, play_on_board, whose_turn, history, spades_broken=False, player_names=("Aaron", "Chris", "David", "Max")):
+    def from_(bids, hands, play_on_board, whose_turn=0, history=[], spades_broken=False, player_names=("Aaron", "Chris", "David", "Max")):
         arr = []
         for bid in bids:
             if bid is None:
@@ -109,20 +112,31 @@ class GameState:
             return "{0} bids {1}\n".format(pad_name(self.names[3]), self.bids[3])
         is_empty = True
         for card_vec in self.table:
-            if not is_no_card(card_vec):
+            if not is_no_card(card_vec): #is card
                 is_empty = False
         empty_message = ""
         if is_empty:
             k = vec_to_player(self.history[-1][2])
             last_card = self.history[-1][0][k]
             winner = vec_to_player(self.history[-1][1])
-            empty_message = "\n{0}/{1} win\n".format(self.names[winner], self.names[PARTNERS[winner]])
+            trick_winners = tuple(vec_to_player(winner) for cards, winner, _ in self.history)
+            tricks_won = len([k for k in trick_winners if k in (winner, PARTNERS[winner])])
+            total_bid = self.bids[winner] + self.bids[PARTNERS[winner]]
+            empty_message = "\n{0}/{1} win ({2}/{3})\n".format(self.names[winner], self.names[PARTNERS[winner]], tricks_won, total_bid)
+            if self.hands_played == 13:
+                empty_message += "\n{0}/{1}: {2}\n{3}/{4}: {5}".format(
+                    self.names[0], 
+                    self.names[PARTNERS[0]],
+                    self.score(0), 
+                    self.names[1], 
+                    self.names[PARTNERS[1]],
+                    self.score(1)
+                )
         else:
             k = self.active_player - 1
             if k < 0:
                 k = 3
             last_card = self.table[k]
-        
         return "{0} plays {1}".format(pad_name(self.names[k]), Card.from_(last_card).prettify()) + empty_message
         
     def debug(self):
@@ -136,8 +150,32 @@ class GameState:
         print(self.label())
     
     def score(self, player):
-        pass
-
+        score = 0
+        bids = (
+            (player, self.bids[player]),
+            (PARTNERS[player], self.bids[PARTNERS[player]]),
+        )
+        total_bid = sum(b[1] for b in bids)
+        trick_winners = tuple(vec_to_player(winner) for cards, winner, _ in self.history)
+        for player, bid in bids:
+            if bid == 0:
+                if player in trick_winners:
+                    score -= 100
+                else:
+                    score += 100
+        tricks_won = len([k for k in trick_winners if k in (player, PARTNERS[player])])
+        if tricks_won < total_bid:
+            score -= 100 * total_bid
+        else:
+            score += 100 * total_bid
+            if tricks_won > total_bid:
+                overbid = tricks_won - total_bid
+                score -= OVERBID_PENALTY * overbid
+        return score
+    
+    def opponent_score(self, player):
+        return self.score((player + 1) % 4)
+    
     def children(self):
         for i, bid in enumerate(self.bids):
             if bid < 0:
@@ -178,6 +216,7 @@ class GameState:
         table_count = sum(1 if is_no_card(card) else 0 for card in self.table)
         opener_index = 0
         has_suit = False
+        has_non_spade = False
         if table_count < 4: #ONE NULL CARD, THREE CARDS
             while not is_no_card(self.table[opener_index]):
                 opener_index = loop_add_one(opener_index)
@@ -186,6 +225,8 @@ class GameState:
             for card in self.hands[active_player]:
                 if not is_no_card(card) and card_suit(card) == card_suit(self.table[opener_index]):
                     has_suit = True
+                if not is_no_card(card) and not is_trump(card):
+                    has_non_spade = True
         else: #Four nulls mean we always have the suit
             has_suit = True
         for k, card in enumerate(self.hands[active_player]):
@@ -197,7 +238,8 @@ class GameState:
                     continue
                 if is_trump(card):
                     if table_count == 4 and self.vec[p2] == 0: #tried to open a spade
-                        continue
+                        if has_non_spade:
+                            continue
                     cpy[p2] = 1
                 play_card(cpy, offset, target)
                 #Update history if last
@@ -228,16 +270,18 @@ class GameState:
 
     
 def test():
-    test_state = GameState.from_([3, 3, 3, None], Deck().deal_array(), [None, None, None, Card("spades", 4)], 0, [
-        ([Card("diamonds", 3), Card("clubs", 3), Card("hearts", 3), Card("spades", 3)], 3, 3)
-    ])
-    start_state = GameState.from_([None, None, None, None], Deck().deal_array(), [None, None, None, None], 0, [])
-    print(start_state.label())
+    start_time = time.time()
+    start_state = GameState.from_([3, 3, 3, 3], Deck().deal_array(), [None, None, None, None], 0)
     d1 = start_state
     for _ in range(14*4):
-        d1 = list(d1.children())
+        d1 = tuple(d1.children())
+        if not d1:
+            break
         random_child = random.choice(d1)
         print(random_child.label())
         d1 = random_child
+    print("Execution time: {0:.2f}ms".format(1000*(time.time() - start_time)))
 
-test()
+if __name__ == "__main__":
+    for i in range(1):
+        test()

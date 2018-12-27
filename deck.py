@@ -12,11 +12,15 @@ class Card:
         if all(vec == np.array(Card.null_card())):
             return None
         return Card(Card.suits[np.where(vec==1)[0][0]], vec[4]) 
+    
+    def encode(self):
+        return self.suit_index * 13 + self.value_index
 
     def __init__(self, suit, value):
         self.suit = suit
         self.value = value
         self.suit_index = Card.suits.index(suit)
+        self.value_index = self.value - 2
         self.display = Card.suit_displays[self.suit_index][Card.values.index(value)]
     
     def vectorize(self):
@@ -47,6 +51,9 @@ class Deck:
                 self.cards.append(Card(suit, val))
         assert len(self.cards) == 52
         random.shuffle(self.cards)
+    
+    def pop(self):
+        return self.cards.pop()
     
     def deal_array(self):
         result = ([], [], [], [])
@@ -111,3 +118,19 @@ class Player:
     
     def __repr__(self):
         return self.name
+
+def pretty_print_hand(hand):
+    print(' '.join(c.prettify() for c in hand))
+
+def sort_hand(hand):
+    suits = [
+        [], [], [], []
+    ]
+    for card in hand:
+        suits[Card.suits.index(card.suit)].append(card)
+    suits.insert(1, suits.pop(3))
+    suits.append(suits.pop(2))
+    result = []
+    for group in suits:
+        result.extend(sorted(group, key=lambda card: card.value))
+    return result

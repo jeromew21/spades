@@ -101,6 +101,12 @@ class GameState:
         else:
             self.history = []
         self.names = player_names
+    
+    def plays(self):
+        return [t[1] for t in self.find_children()]
+
+    def children(self):
+        return [t[0] for t in self.find_children()]
 
     def label(self):
         for i, bid in enumerate(self.bids):
@@ -176,7 +182,7 @@ class GameState:
     def opponent_score(self, player):
         return self.score((player + 1) % 4)
     
-    def children(self):
+    def find_children(self):
         for i, bid in enumerate(self.bids):
             if bid < 0:
                 player_with_2_clubs = 0
@@ -189,7 +195,7 @@ class GameState:
                 for b in range(14):
                     cpy = np.copy(self.vec)
                     cpy[i] = b
-                    yield GameState(cpy, 0, self.names)
+                    yield GameState(cpy, 0, self.names), None
                 return
         if self.hands_played == 0 and all(is_no_card(card) for card in self.table):
             #Yield state where 2clubs has been played and it is next player's turn
@@ -208,7 +214,7 @@ class GameState:
             indice = p1 + 5*player_with_2_clubs
             cpy[indice:indice+5] = cpy[offset:offset+5]
             cpy[offset:offset+5] = np.zeros((5,), dtype='int32')    
-            yield GameState(cpy, 0, self.names)
+            yield GameState(cpy, 0, self.names), TWO_CLUBS
             return
         active_player = vec_to_player(self.vec[4:8])
         next_player = player_to_hot(loop_add_one(active_player))
@@ -227,7 +233,7 @@ class GameState:
                     has_suit = True
                 if not is_no_card(card) and not is_trump(card):
                     has_non_spade = True
-        else: #Four nulls mean we always have the suit
+        else: #Four nulls meanelse we always have the suit
             has_suit = True
         for k, card in enumerate(self.hands[active_player]):
             offset = active_player*13*5 + k*5 + 8
@@ -266,8 +272,10 @@ class GameState:
                     cpy[p1:p2] = np.zeros((20,), dtype='int32') #Zero out table
                     history_i += 1
                 t = GameState(cpy, history_i, self.names)
-                yield t
-
+                yield t, card
+    
+    def __repr__(self):
+        return " ".join(k for k in self.label().split() if k)
     
 def test():
     start_time = time.time()
@@ -281,6 +289,20 @@ def test():
         print(random_child.label())
         d1 = random_child
     print("Execution time: {0:.2f}ms".format(1000*(time.time() - start_time)))
+
+def hook(ai_function, state):
+    ai_card = ai_function(
+        state.active_player,
+        state.hands[state.active_player],
+        state.table,
+        state.bids,
+        state.history,
+        state.spades_broken
+    )
+    for state, card in state.find_children():
+        if all(ai_card == card):
+            return state
+    raise Exception("Card not valid")
 
 if __name__ == "__main__":
     for i in range(1):

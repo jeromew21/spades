@@ -61,6 +61,8 @@ def best_hands():
     c = conn.cursor()
     query = "SELECT hand from bids WHERE best_bid = '7'"
     c.execute(query)
-    print(c.fetchall())
+    for t in c.fetchall():
+        hand = [Card.from_(i) for i, k in enumerate(t[0]) if k == '1']
+        print(hand)
     conn.commit()
     conn.close()

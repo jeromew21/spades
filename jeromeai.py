@@ -1,10 +1,11 @@
 from spades import *
 
-def rate_card(card):
+def rate_card(card, active_suit):
     score = 0
-    if not is_no_card and is_trump(card):
+    if not is_no_card(card) and is_trump(card):
         score += 14
-    score += card[4]
+    if active_suit is None or (not is_no_card(card) and card_suit(card) == active_suit):
+        score += card[4]
     return score
 
 def jerome_ai(player, hand, table, bids, history, spades_broken):
@@ -32,7 +33,7 @@ def jerome_ai(player, hand, table, bids, history, spades_broken):
             if not is_no_card(card) and not is_trump(card):
                 has_non_spade = True
     
-    card_scores = ((i, rate_card(card), card) for i, card in enumerate(hand))
+    card_scores = ((i, rate_card(card, active_suit), card) for i, card in enumerate(hand))
     card_scores = [
         (i, score, card) for i, score, card in card_scores if
         #Play a card of suit
@@ -46,7 +47,7 @@ def jerome_ai(player, hand, table, bids, history, spades_broken):
         )
     ]
     table_scores = (
-        (i, rate_card(card), card) for i, card in enumerate(table)
+        (i, rate_card(card, active_suit), card) for i, card in enumerate(table)
     )
     best_on_table = max(table_scores, key=lambda x: x[1])
     strongest_play = max(card_scores, key=lambda x: x[1])
@@ -60,8 +61,18 @@ def jerome_ai(player, hand, table, bids, history, spades_broken):
     total_bid = bids[player] + bids[PARTNERS[player]]
     if tricks_won >= total_bid: #We have gone over
         return weakest_play[2]
-    #Take best play better than strongest play
-    return strongest_play[2]
+    
+    partner_play = rate_card(table[PARTNERS[player]], active_suit)
+    if strongest_play[1] > partner_play and partner_play > 10:
+        return weakest_play[2]
+    #Take worst play better than best on table
+    better = [
+        (i, score, card) for i, score, card in card_scores if
+        score > best_on_table[1]
+    ]
+    if better:
+        return min(better, key=lambda x: x[1])[2]
+    return weakest_play[2]
 
 def test_ai():
     start_state = GameState.from_([3, 3, 3, 3], Deck().deal_array(), [None, None, None, None], 0)

@@ -16,11 +16,10 @@ def fight(a1, a2, names=NAMES):
         p_names = (names[1] + "1", names[0] + "2", names[1] + "1", names[0] + "2")
     start_state = GameState.from_([random.randint(1, 3) for _ in range(4)], Deck().deal_array(), [None, None, None, None], 0, player_names=p_names)
     state = start_state.children()[0]
-    print(state.label())
     while state.hands_played < 13:
         ai_func = turns[state.active_player]
         state = hook(ai_func, state)
-        print(state.label())
+        #print(state.label())
     if state.score(0) > state.score(1):
         return turns[0]
     elif state.score(0) < state.score(1):
@@ -31,12 +30,15 @@ def fight(a1, a2, names=NAMES):
 def match():
     record = [0, 0]
     errors = 0
-    for i in range(100):
-        winner = fight(jerome_ai, play_turn)
+    for i in range(10000):
+        try:
+            winner = fight(jerome_ai, play_turn)
+        except:
+            winner = None
+            errors += 1
         if winner == jerome_ai:
             record[0] += 1
         elif winner == play_turn:
             record[1] += 1
     print("Jerome wins", record[0])
     print("Jacob wins", record[1])
-    print("Jacob errors", errors)

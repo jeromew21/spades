@@ -9,6 +9,8 @@ class Card:
     
     @staticmethod
     def from_(vec):
+        if isinstance(vec, int):
+            return Card(Card.suits[vec//13], Card.values[vec%13])
         if all(vec == np.array(Card.null_card())):
             return None
         return Card(Card.suits[np.where(vec==1)[0][0]], vec[4]) 
@@ -120,7 +122,7 @@ class Player:
         return self.name
 
 def pretty_print_hand(hand):
-    print(' '.join(c.prettify() for c in hand))
+    print(' '.join(c.prettify() for c in sort_hand(hand)))
 
 def sort_hand(hand):
     suits = [

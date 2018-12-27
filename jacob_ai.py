@@ -3,6 +3,7 @@ import time
 from deck import *
 from spades import *
 from copy import copy
+import random
 
 empty_card = np.array([0,0,0,0,0])
 
@@ -47,7 +48,6 @@ def play_turn(player, hand, table, bids, history, spades):
 				card = copy(empty_card)
 				card[suit] = 1
 				card[4] = hand_high
-				print(0)
 				return card
 
 			#try to play a spade instead
@@ -60,7 +60,6 @@ def play_turn(player, hand, table, bids, history, spades):
 					card = copy(empty_card)
 					card[1] = 1
 					card[4] = spade_low
-					print(1)
 					return card
 
 	#otherwise play lowest card in suit
@@ -72,7 +71,6 @@ def play_turn(player, hand, table, bids, history, spades):
 		card = copy(empty_card)
 		card[suit] = 1
 		card[4] = hand_low
-		print(2)
 		return card
 
 	#if no card in suit play lowest non-trump
@@ -84,7 +82,6 @@ def play_turn(player, hand, table, bids, history, spades):
 		card = copy(empty_card)
 		card[hand_low_suit] = 1
 		card[4] = hand_low
-		print(3)
 		return card
 
 	#play lowest trump
@@ -94,11 +91,11 @@ def play_turn(player, hand, table, bids, history, spades):
 	card = copy(empty_card)
 	card[1] = 1
 	card[4] = hand_low
-	print(4)
 	return card
 
 def test_ai():
-	start_state = GameState.from_([3, 3, 3, 3], Deck().deal_array(), [None, None, None, None], 0)
+	bidding_vec = [random.randint(0,13) for i in range(4)]
+	start_state = GameState.from_(bidding_vec, Deck().deal_array(), [None, None, None, None], 0)
 	state = start_state.children()[0]
 	print(state.label())
 	while state.hands_played < 13:

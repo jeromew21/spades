@@ -47,7 +47,6 @@ def play_turn(player, hand, table, bids, history, spades):
 				card = copy(empty_card)
 				card[suit] = 1
 				card[4] = hand_high
-				print(0)
 				return card
 
 			#try to play a spade instead
@@ -60,7 +59,6 @@ def play_turn(player, hand, table, bids, history, spades):
 					card = copy(empty_card)
 					card[1] = 1
 					card[4] = spade_low
-					print(1)
 					return card
 
 	#otherwise play lowest card in suit
@@ -72,7 +70,6 @@ def play_turn(player, hand, table, bids, history, spades):
 		card = copy(empty_card)
 		card[suit] = 1
 		card[4] = hand_low
-		print(2)
 		return card
 
 	#if no card in suit play lowest non-trump
@@ -84,7 +81,6 @@ def play_turn(player, hand, table, bids, history, spades):
 		card = copy(empty_card)
 		card[hand_low_suit] = 1
 		card[4] = hand_low
-		print(3)
 		return card
 
 	#play lowest trump
@@ -94,7 +90,6 @@ def play_turn(player, hand, table, bids, history, spades):
 	card = copy(empty_card)
 	card[1] = 1
 	card[4] = hand_low
-	print(4)
 	return card
 
 def test_ai():

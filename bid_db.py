@@ -1,6 +1,6 @@
 import sqlite3
 import json
-from spades import *
+from jeromeai import *
 
 DB = "bidding.sqlite3"
 
@@ -20,7 +20,7 @@ def generate_row():
     deck = Deck()
     hand = sort_hand([deck.pop() for _ in range(13)])
     rest = [deck.pop() for _ in range(13*3)]
-    inner_size = 50
+    inner_size = 30
     means = []
     for bid in range(8): #We rarely, rarely see bids over 7.
         samples = []
@@ -33,15 +33,11 @@ def generate_row():
                 rest[26:39],
             ]
             start_state = GameState.from_([bid, 2, 2, 2], starting_hands, [None, None, None, None])
-            d1 = start_state
-            for _ in range(14*4):
-                children = tuple(d1.children())
-                if not children:
-                    break
-                random_child = random.choice(children)
-                #print(random_child.label())
-                d1 = random_child
-            score = d1.score(0)
+            state = start_state.children()[0]
+            while state.hands_played < 13:
+                state = hook(jerome_ai, state)
+                #print(state.label())   
+            score = state.score(0)
             #print("{0}/{1}".format(k, inner_size), diff)
             samples.append(score)
         mean = sum(samples) / len(samples)

@@ -84,7 +84,7 @@ class GameState:
         vec[:arr.shape[0]] = arr
         return GameState(vec, len(history))
 
-    def __init__(self, state_vector, hands_played, player_names=("Aaron", "Chris", "David", "Max")):
+    def __init__(self, state_vector, hands_played=0, player_names=("Aaron", "Chris", "David", "Max")):
         self.vec = state_vector
         self.hands_played = hands_played
         self.bids = state_vector[0:4]
